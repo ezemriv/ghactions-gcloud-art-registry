@@ -31,10 +31,29 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker $GAR_LOCATION-docker.pkg.dev
 
+    # Extract version from toml file to tag images
+      - name: Extract version from pyproject.toml
+        id: version
+        run: |
+            VERSION=$(grep '^version' pyproject.toml | sed -E 's/version *= *\"([^\"]+)\"/\1/')
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+    # # Build and push Docker image
+    #   - name: Build Docker image
+    #     run: |
+    #       docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA .
+
+    #   - name: Push Docker image
+    #     run: |
+    #       docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA
+
       - name: Build Docker image
         run: |
-          docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA .
+            docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$VERSION \
+            -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:latest .
 
       - name: Push Docker image
         run: |
-          docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA
+            docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$VERSION
+            docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:latest
+
