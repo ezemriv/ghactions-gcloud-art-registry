@@ -38,15 +38,7 @@ jobs:
             VERSION=$(grep '^version' pyproject.toml | sed -E 's/version *= *\"([^\"]+)\"/\1/')
             echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-    # # Build and push Docker image
-    #   - name: Build Docker image
-    #     run: |
-    #       docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA .
-
-    #   - name: Push Docker image
-    #     run: |
-    #       docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA
-
+    # Build and push Docker image
       - name: Build Docker image
         run: |
             docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$VERSION \
