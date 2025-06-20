@@ -7,7 +7,7 @@ Repository for testing CI/CD for deployment of docker image to artifact registry
 docker build -t flask-cloudrun .
 
 docker run -e APP_TITLE="My Local Flask App with custom env" -p 8080:8080 flask-cloudrun
-````
+```
 
 # GCP Project Setup for Cloud Run Job Deployment (POC)
 
@@ -110,3 +110,171 @@ Your project can now:
 3. Schedule those jobs with Cloud Scheduler.
 
 Proceed to the Flask “Hello World” app, Dockerfile, and the GitHub Actions workflow.
+
+---
+
+## 6.1 · Configure Workload Identity Federation (WIF) for GitHub Actions
+
+To let GitHub Actions push to Artifact Registry without using service account keys, configure Workload Identity Federation with GitHub OIDC.
+
+### Step 1: Create a Workload Identity Pool
+
+```bash
+gcloud iam workload-identity-pools create "github-pool" \
+  --location="global" \
+  --display-name="GitHub Actions Pool"
+```
+
+### Step 2: Create a GitHub OIDC Provider inside that Pool
+
+Replace the `attribute-condition` with your exact GitHub repo:
+
+```bash
+gcloud iam workload-identity-pools providers create-oidc "github-provider" \
+  --location="global" \
+  --workload-identity-pool="github-pool" \
+  --display-name="GitHub OIDC Provider" \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --attribute-condition="attribute.repository == 'ezemriv/ghactions-gcloud-art-registry'"
+```
+
+✅ Next Step: IAM Binding for GitHub OIDC
+Now that your identity pool and GitHub OIDC provider are set up, you must allow GitHub Actions (via the OIDC token) to impersonate your CI service account.
+
+Run this command:
+
+bash
+Copy
+Edit
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+
+gcloud iam service-accounts add-iam-policy-binding ci-image-push-sa@$PROJECT_ID.iam.gserviceaccount.com \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/ezemriv/ghactions-gcloud-art-registry"
+This grants your GitHub repo permission to impersonate ci-image-push-sa.
+
+Once that’s done, we can move on to writing the GitHub Actions workflow file (.github/workflows/docker-build.yml). Want to do that next?
+
+> This will allow GitHub Actions workflows in that repo to impersonate a GCP service account securely.
+> Your project can now:
+
+1. Accept Docker images pushed from GitHub Actions.
+2. Deploy Cloud Run Jobs.
+3. Schedule those jobs with Cloud Scheduler.
+
+Proceed to the Flask “Hello World” app, Dockerfile, and the GitHub Actions workflow.
+
+---
+
+## 7 · Build and Test Flask App Locally
+
+We'll now scaffold and test a minimal Flask app locally before deploying.
+
+### 7.1 Create Project Files
+
+Directory structure:
+
+```bash
+deploy-playground/
+├── app.py
+├── Dockerfile
+├── requirements.txt
+```
+
+#### `app.py`
+
+```python
+import os
+from flask import Flask
+
+app = Flask(__name__)
+title = os.getenv("APP_TITLE", "Default Title")
+
+@app.route("/")
+def hello():
+    return f"<h1>{title}</h1><p>Hello from Cloud Run!</p>"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
+```
+
+#### `requirements.txt`
+
+```
+flask
+```
+
+#### `Dockerfile`
+
+```Dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "app.py"]
+```
+
+### 7.2 Build Docker Image Locally
+
+```bash
+docker build -t flask-hello-world .
+```
+
+### 7.3 Run the Container Locally
+
+```bash
+docker run -e APP_TITLE="My Local Flask App" -p 8080:8080 flask-hello-world
+```
+
+Then open your browser and visit: [http://localhost:8080](http://localhost:8080)
+Your project can now:
+
+1. Accept Docker images pushed from GitHub Actions.
+2. Deploy Cloud Run Jobs.
+3. Schedule those jobs with Cloud Scheduler.
+
+Proceed to the Flask “Hello World” app, Dockerfile, and the GitHub Actions workflow.
+
+## Secrets in repo actions
+
+Here's exactly how to fill them in:
+
+---
+
+### ✅ GitHub Secret 1
+
+* **Name**: `WIF_PROVIDER`
+* **Secret**:
+
+  ```
+  projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+  ```
+
+  Replace `PROJECT_NUMBER` with:
+
+  ```bash
+  gcloud projects describe deploy-playground --format="value(projectNumber)"
+  ```
+
+Example:
+
+```
+projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+```
+
+---
+
+### ✅ GitHub Secret 2
+
+* **Name**: `WIF_SERVICE_ACCOUNT`
+* **Secret**:
+
+  ```
+  ci-image-push-sa@deploy-playground.iam.gserviceaccount.com
+  ```
+
+---
+
+Once those are added, you're good to proceed to the workflow YAML file. Let me know and I’ll drop it in.

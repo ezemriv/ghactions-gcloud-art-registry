@@ -1,0 +1,40 @@
+name: Build & Push to Artifact Registry
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: deploy-playground
+  GAR_LOCATION: europe-southwest1
+  REPOSITORY: ghactions-deploy
+  IMAGE: flask-cloudrun
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+    # Authenticate Docker to Google Cloud Artifact Registry
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker $GAR_LOCATION-docker.pkg.dev
+
+      - name: Build Docker image
+        run: |
+          docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA .
+
+      - name: Push Docker image
+        run: |
+          docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA
