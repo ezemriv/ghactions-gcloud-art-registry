@@ -17,7 +17,7 @@ fi
 
 FULL_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${IMAGE_TAG}"
 JOB_SA_EMAIL="${JOB_SA}@${PROJECT_ID}.iam.gserviceaccount.com"
-CI_SA_EMAIL="${CI_SA}@${PROJECT_ID}.iam.gservaceaccount.com"
+CI_SA_EMAIL="${CI_SA}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 # =============================================================================
 # DEPLOYMENT SCRIPT
