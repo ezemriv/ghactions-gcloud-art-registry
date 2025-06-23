@@ -1,6 +1,7 @@
 import logging
 import sys
 import time
+import os
 
 def main():
     logging.basicConfig(
@@ -9,7 +10,8 @@ def main():
         handlers=[logging.StreamHandler(sys.stdout)]
     )
 
-    logging.info("Starting Cloud Run job test script.")
+    dummy_env = os.getenv("DUMMY_ENV", "default_value")
+    logging.info(f"Starting Cloud Run job test script. DUMMY_ENV={dummy_env}")
     for i in range(5):
         logging.info(f"Processing step {i+1}/5...")
         time.sleep(1)
