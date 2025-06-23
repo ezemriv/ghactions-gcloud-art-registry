@@ -29,4 +29,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 ENTRYPOINT []
 
 # Set the default command - update this to match your project's entry point
-CMD ["uv", "run", "app.py"]
+CMD ["uv", "run", "main.py"]

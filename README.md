@@ -283,45 +283,90 @@ jobs:
         run: gcloud auth configure-docker $GAR_LOCATION-docker.pkg.dev
 
       - name: Build Docker image
-        run: |
-          docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA .
-
-      - name: Push Docker image
-        run: |
-          docker push $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA
+        run: | SEE REALL WORKFLOW WITH VERSION::LATEST TAGS
 ```
 
 Once pushed, GitHub Actions will build and publish your container image.
 
 ---
 
-## 9 · Deploy to Cloud Run Job (Manual)
+9 · Deploy to Cloud Run Job (Manual)
 
-You can now deploy the pushed image as a Cloud Run Job manually:
-
-```bash
-IMAGE_TAG=$(git rev-parse HEAD)  # or use the full SHA you pushed
+After pushing your image with the :latest tag, you can deploy the latest version to Cloud Run Job:
 
 gcloud run jobs deploy flask-job \
   --project=deploy-playground \
   --region=europe-southwest1 \
-  --image=europe-southwest1-docker.pkg.dev/deploy-playground/tradelab/flask-cloudrun:$IMAGE_TAG \
-  --service-account=ingest-job-sa@deploy-playground.iam.gserviceaccount.com \
+  --image=europe-southwest1-docker.pkg.dev/deploy-playground/tradelab/flask-cloudrun:latest \
+  --service-account=demoapp-job-sa@deploy-playground.iam.gserviceaccount.com \
   --set-env-vars="APP_TITLE=Hello from Cloud Run" \
   --quiet
-```
 
 To run it immediately:
 
-```bash
 gcloud run jobs execute flask-job --region=europe-southwest1
-```
 
 You're now fully deployed and can trigger your job manually or via Cloud Scheduler.
 Your project can now:
 
-1. Accept Docker images pushed from GitHub Actions.
-2. Deploy Cloud Run Jobs.
-3. Schedule those jobs with Cloud Scheduler.
+Accept Docker images pushed from GitHub Actions.
+
+Deploy Cloud Run Jobs.
+
+Schedule those jobs with Cloud Scheduler.
 
 Proceed to the Flask “Hello World” app, Dockerfile, and the GitHub Actions workflow.
+
+# CORROBORAR BIEN NOMBRES DE SERVICE ACOUNTS, REPO Y IMAGENES PORQUE FUI CAMBIANDO DE MI CONVERSACION CON CHATIE
+
+
+# Para probar corro con scheduling 1 por minuto
+
+Perfect — that internal IP confirms Flask started inside the container and the job ran as expected 🎯
+
+---
+
+## 🕒 Add a Cloud Scheduler Job (Run Every Minute for Testing)
+
+You’ll use **Cloud Scheduler + authenticated HTTP call** to trigger the job.
+
+### ✅ 1. Create the scheduler trigger --> NO FUNCIONA EN SOUTHWEST1
+
+```bash
+gcloud scheduler jobs create http flask-job-schedule \
+  --project=deploy-playground \
+  --location=europe-west1 \
+  --schedule="* * * * *" \
+  --http-method=POST \
+  --uri="https://europe-southwest1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/deploy-playground/jobs/flask-job:run" \
+  --oidc-service-account-email=demoapp-job-sa@deploy-playground.iam.gserviceaccount.com
+
+```
+
+This sets up:
+
+* A job named `flask-job-schedule`
+* That runs **every minute**
+* Authenticated using your existing job's service account
+* Sends an HTTP POST to trigger execution
+
+---
+
+### ✅ 2. Verify
+
+Run this to see your scheduler job:
+
+```bash
+gcloud scheduler jobs list --location=europe-southwest1
+```
+
+View logs and job runs here:
+
+```
+https://console.cloud.google.com/run/jobs/details/europe-southwest1/flask-job/executions
+```
+
+---
+
+Let me know if you want to change the schedule or add this to the tutorial.
+
