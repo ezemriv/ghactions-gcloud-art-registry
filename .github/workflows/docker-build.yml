@@ -4,11 +4,11 @@ on:
   push:
     branches: [main]
 
-env:
-  PROJECT_ID: deploy-playground
-  GAR_LOCATION: europe-southwest1
-  REPOSITORY: ghactions-deploy
-  IMAGE: flask-cloudrun
+# env:
+#   PROJECT_ID: deploy-playground
+#   GAR_LOCATION: europe-southwest1
+#   REPOSITORY: ghactions-deploy
+#   IMAGE: flask-cloudrun
 
 jobs:
   build:
@@ -20,6 +20,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Load configuration
+        run: |
+          set -a  # automatically export all variables
+          source config.env
+          set +a
+          # Make them available to subsequent steps
+          echo "PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "GAR_LOCATION=$GAR_LOCATION" >> $GITHUB_ENV
+          echo "REPOSITORY=$REPOSITORY" >> $GITHUB_ENV
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -42,7 +53,7 @@ jobs:
       - name: Build Docker image
         run: |
             docker build -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$VERSION \
-            -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:latest . 
+            -t $GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:latest .
 
       - name: Push Docker image
         run: |
