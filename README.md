@@ -17,7 +17,7 @@ Repository for testing CI/CD for deployment of docker image to artifact registry
 
 3. **Export the project number and run deployment**
    ```bash
-   export PROJECT_NUMBER=$(gcloud projects describe $(grep PROJECT_ID config.env | cut -d'=' -f2) --format="value(projectNumber)") && ./deploy-gcp-scheduled-job.sh
+   export PROJECT_NUMBER=$(gcloud projects describe $(grep PROJECT_ID config.env | cut -d'=' -f2 | tr -d '"') --format="value(projectNumber)") && ./deploy-gcp-scheduled-job.sh
    ```
 
 4. **Verify deployment**

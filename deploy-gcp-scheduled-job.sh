@@ -15,7 +15,7 @@ fi
 # DERIVED VARIABLES - DO NOT MODIFY
 # =============================================================================
 
-FULL_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+FULL_IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/${IMAGE_NAME}:${IMAGE_TAG}"
 JOB_SA_EMAIL="${JOB_SA}@${PROJECT_ID}.iam.gserviceaccount.com"
 CI_SA_EMAIL="${CI_SA}@${PROJECT_ID}.iam.gservaceaccount.com"
 
@@ -41,14 +41,14 @@ gcloud services enable \
 
 echo "2️⃣ Creating Artifact Registry repository..."
 # Check if repository exists first
-if gcloud artifacts repositories describe $REPO_NAME --location=$REGION &>/dev/null; then
-  echo "   ✅ Repository $REPO_NAME already exists"
+if gcloud artifacts repositories describe $REPOSITORY --location=$REGION &>/dev/null; then
+  echo "   ✅ Repository $REPOSITORY already exists"
 else
-  gcloud artifacts repositories create $REPO_NAME \
+  gcloud artifacts repositories create $REPOSITORY \
     --repository-format=docker \
     --location=$REGION \
     --description="Docker repo for POC deployments"
-  echo "   ✅ Repository $REPO_NAME created"
+  echo "   ✅ Repository $REPOSITORY created"
 fi
 
 echo "3️⃣ Creating service accounts..."
